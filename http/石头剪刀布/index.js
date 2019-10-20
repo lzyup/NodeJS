@@ -77,5 +77,10 @@ http
                 response.end('你输了!')
             }
         }
+
+        //如果访问的是根路径，则把游戏页面读出来返回出去
+        if (parsedUrl.pathname == '/') {
+            fs.createReadStream(__dirname + '/index.html').pipe(response)
+        }
     })
     .listen(3000)
