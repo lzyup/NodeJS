@@ -22,8 +22,6 @@ app.use(
 )
 
 const gameKoa = new koa();
-
-const gameKoa = new koa();
 app.use(mount('/game', gameKoa))
 gameKoa.use(
     async function (ctx, next) {
