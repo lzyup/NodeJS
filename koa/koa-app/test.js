@@ -1,47 +1,36 @@
-//测试koa中间件执行顺序
-const koa = require("koa");
-const Router = require("koa-router");
+const user = {
+    name: '<script />'
+}
+const vm = require('vm');
+const templateMap = {
+    templateA: '`<h2>${include("templateB")}</h2>`',
+    templateB: '`<p>hahahaha</p>`'
+}
 
-//实例化koa
-const app = new koa();
-const router = new Router();
+const context = {
+    include: function (name) {
+        return templateMap[name]();
+    },
+    _: function (markup) {
+        if (!markup) return '';
+        return String(markup)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/'/g, '&#39')
+            .replace(/"/g, '&quot');
+    }
+}
 
-//应用级中间件(匹配任何路由)
-app.use(async (ctx, next) => {
-    console.log('1、这是第一个中间件')
-    next(); //当前路由匹配完成以后继续向下匹配
-    console.log('5、匹配路由完成以后又会返回来执行中间件')
+Object.keys(templateMap).forEach(key => {
+    const temp = templateMap[key];
+    templateMap[key] = vm.runInNewContext(`
+    (function(){
+        return ${temp}
+    });`, context)
 })
+console.log('xgf', templateMap);
 
-app.use(async (ctx,next)=>{
-    console.log('2、这是第二个中间件')
-    next();
-    console.log('4、匹配到路由完成以后又会返回来执行中间件')
-})
+console.log(templateMap['templateA']())
 
-//路由
-
-
-
-//路由级别中间件
-router.get("/news", async (ctx, next) => {
-    console.log('3、匹配到了news这个路由')
-    ctx.body = '这是新闻'
-
-    next(); //同样匹配到路由完成以后继续向下匹配
-})
-router.get("/news", async (ctx, next) => {
-    ctx.body = '这是新闻11'
-})
-
-
-
-
-//配置路由  
-app.use(router.routes()).use(router.allowedMethods());
-
-const port = process.env.PORT || 5000;
-
-app.listen(port, () => {
-    console.log(`server started on ${port} `);
-});
+// console.log(vm.runInNewContext('`<h2>${user.name}</h2>`', { user }));
